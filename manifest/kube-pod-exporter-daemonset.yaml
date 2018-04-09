@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: kube-pod-exporter
+spec:
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: kube-pod-exporter
+      name: kube-pod-exporter
+    spec:
+      serviceAccountName: kube-pod-exporter
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+      - image: quay.io/brancz/kube-pod-exporter:v0.1.0
+        args:
+        - "--listen-address=:8080"
+        - "--container-runtime-endpoint=unix:///var/run/crio.sock"
+        imagePullPolicy: Always
+        name: kube-pod-exporter
+        resources:
+          requests:
+            memory: 30Mi
+            cpu: 100m
+          limits:
+            memory: 50Mi
+            cpu: 200m
+        volumeMounts:
+        - name: cri-endpoint
+          mountPath: /var/run/crio.sock
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+      volumes:
+      - name: cri-endpoint
+        hostPath:
+          path: /var/run/crio/crio.sock
+          type: Socket
+
